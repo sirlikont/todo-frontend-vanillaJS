@@ -85,6 +85,26 @@ function createTaskRow(task) {
     const checkbox = taskRow.querySelector("[name='completed']");
     checkbox.checked = task.marked_as_done;
 
+    // et checkbox ka serverisse salvestuks
+    checkbox.addEventListener('change', async () => {
+        try {
+            const response = await fetch(`/tasks/${task.id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ marked_as_done: checkbox.checked })
+            });
+
+            if (!response.ok) throw new Error('Serveri viga: ' + response.status);
+
+            console.log(`Task ${task.id} uuendatud: ${checkbox.checked}`);
+        } catch (err) {
+            console.error('Taski uuendamisel viga:', err);
+        }
+    });
+
     const deleteButton = taskRow.querySelector('.delete-task');
     deleteButton.addEventListener('click', async () => {
         try {
