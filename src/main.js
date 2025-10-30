@@ -173,6 +173,56 @@ window.addEventListener('load', () => {
         }
     });
 
+    // LOGIN ↔ REGISTER vahetamine
+    const toggleLink = document.querySelector('#toggle-login-register');
+    const registerContainer = document.querySelector('#register-container');
+    const loginContainer = document.querySelector('#login-container');
+
+    toggleLink.addEventListener('click', () => {
+        const isLoginVisible = loginContainer.querySelector('#login-form').style.display !== 'none';
+        if (isLoginVisible) {
+            // Näita registreerimist, peida login
+            loginContainer.querySelector('#login-form').style.display = 'none';
+            registerContainer.style.display = 'block';
+            toggleLink.textContent = 'Tagasi sisselogimise juurde';
+        } else {
+            // Näita login, peida registreerimine
+            loginContainer.querySelector('#login-form').style.display = 'block';
+            registerContainer.style.display = 'none';
+            toggleLink.textContent = 'Registreeru uue kasutajana';
+        }
+    });
+
+    // REGISTREERIMINE
+    const registerButton = document.querySelector('#register-button');
+    registerButton.addEventListener('click', async () => {
+        const username = document.querySelector('#register-username').value;
+        const firstname = document.querySelector('#register-firstname').value;
+        const lastname = document.querySelector('#register-lastname').value;
+        const password = document.querySelector('#register-password').value;
+
+        try {
+            const response = await fetch('/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, firstname, lastname, newPassword: password })
+            });
+            if (!response.ok) throw new Error('Registreerimine ebaõnnestus');
+
+            document.querySelector('#register-message').textContent = 'Konto loodud! Logi nüüd sisse.';
+            setTimeout(() => {
+                // Vaheta automaatselt tagasi loginivaatele
+                loginContainer.querySelector('#login-form').style.display = 'block';
+                registerContainer.style.display = 'none';
+                toggleLink.textContent = 'Registreeru uue kasutajana';
+            }, 1500);
+        } catch (err) {
+            document.querySelector('#register-message').style.color = 'red';
+            document.querySelector('#register-message').textContent = err.message;
+            console.error(err);
+        }
+    });
+
     // LOGOUT
     logoutButton.addEventListener('click', () => {
         sessionStorage.removeItem('token');
