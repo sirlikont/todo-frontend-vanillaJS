@@ -14,20 +14,42 @@
 </head>
 
 <body>
-    <div type="flex" class="ant-row ant-row-center" style="min-height: 100vh; margin-top: 6rem;">
-        <div class="ant-col ant-col-12">
-
-            <h1>Task List</h1>
-            <!-- Input väli uue taski jaoks -->
-            <div style="margin-bottom: 1rem;">
-                <input id="new-task-name" type="text" class="ant-input" placeholder="Sisesta uus task" />
+     <div class="app-container">
+        <!-- sisselogimine -->
+        <div id="login-container" style="display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+            <div style="display: flex; flex-direction: column; gap: 1rem; width: 300px; text-align: center;">
+                <h2>Logi sisse</h2>
+                <form id="login-form" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <input type="text" id="login-username" placeholder="Kasutajanimi" required class="ant-input">
+                    <input type="password" id="login-password" placeholder="Parool" required class="ant-input">
+                    <button type="button" id="login-button" class="ant-btn ant-btn-default">Logi sisse</button>
+                </form>
+                <p id="login-error" style="color:red;"></p>
             </div>
+        </div>
 
-            <button id="add-task" type="button" class="ant-btn ant-btn-default">Add Task</button>
-            <div class="ant-divider ant-divider-horizontal" role="separator"></div>
 
-            <div class="ant-list ant-list-sm ant-list-split ant-list-bordered">
-                <ul id="task-list" class="ant-list-items"></ul>
+        <!-- todo sisu -->
+        <div id="todo-container" class="app-block" style="display:none;">
+            
+            <div type="flex" class="ant-row ant-row-center" style="min-height: 100vh; margin-top: 6rem;">
+                <div class="ant-col ant-col-12">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h1>Task List</h1>
+                        <button id="logout-button">Logi välja</button>
+                    </div>
+                    <!-- Input väli uue taski jaoks -->
+                    <div style="margin-bottom: 1rem;">
+                        <input id="new-task-name" type="text" class="ant-input" placeholder="Sisesta uus task" />
+                    </div>
+
+                    <button id="add-task" type="button" class="ant-btn ant-btn-default">Add Task</button>
+                    <div class="ant-divider ant-divider-horizontal" role="separator"></div>
+
+                    <div class="ant-list ant-list-sm ant-list-split ant-list-bordered">
+                        <ul id="task-list" class="ant-list-items"></ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -7,10 +7,12 @@ let addTask;
 let taskInput;
 
 // Access token
-const ACCESS_TOKEN = "E5Q7-iN8HLCY-v8IUiEjkv7GK7EJkm1A";
+let ACCESS_TOKEN = null;
 
 // Laeme serverist olemasolevad taskid
 async function loadTasksFromServer() {
+    if (!ACCESS_TOKEN) return;
+
     try {
         const response = await fetch('/tasks', {
             method: 'GET',
@@ -24,49 +26,13 @@ async function loadTasksFromServer() {
         const data = await response.json();
         tasks = data;
 
-        // Kuvame kõik taskid lehele
+        // Tühjenda vana list ja kuva uuesti
+        taskList.innerHTML = '';
         tasks.forEach(task => renderTask(task));
     } catch (err) {
         console.error('Taskide laadimisel viga:', err);
     }
 }
-
-// Kui leht on laetud
-window.addEventListener('load', () => {
-    taskList = document.querySelector('#task-list');
-    addTask = document.querySelector('#add-task');
-    taskInput = document.querySelector('#new-task-name');
-
-    // Laeme olemasolevad taskid
-    loadTasksFromServer();
-
-    // Nupu vajutamisel lisame uue taski
-    addTask.addEventListener('click', async () => {
-        const title = taskInput.value.trim();
-        if (!title) return;
-
-        try {
-            const response = await fetch('/tasks', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${ACCESS_TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ title: title, desc: "" })
-            });
-
-            if (!response.ok) throw new Error('Serveri viga: ' + response.status);
-
-            const newTask = await response.json();
-            tasks.push(newTask);
-
-            renderTask(newTask);
-            taskInput.value = ''; // tühjendame inputi
-        } catch (err) {
-            console.error('Taski lisamisel viga:', err);
-        }
-    });
-});
 
 // Funktsioon ühe taski kuvamiseks
 function renderTask(task) {
@@ -107,51 +73,50 @@ name.addEventListener('change', async () => {
     }
 });
 
+const checkbox = taskRow.querySelector("[name='completed']");
+checkbox.checked = task.marked_as_done;
 
-    const checkbox = taskRow.querySelector("[name='completed']");
-    checkbox.checked = task.marked_as_done;
+// et checkbox ka serverisse salvestuks
+checkbox.addEventListener('change', async () => {
+    try {
+        const response = await fetch(`/tasks/${task.id}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ marked_as_done: checkbox.checked })
+        });
 
-    // et checkbox ka serverisse salvestuks
-    checkbox.addEventListener('change', async () => {
-        try {
-            const response = await fetch(`/tasks/${task.id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${ACCESS_TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ marked_as_done: checkbox.checked })
-            });
+        if (!response.ok) throw new Error('Serveri viga: ' + response.status);
 
-            if (!response.ok) throw new Error('Serveri viga: ' + response.status);
+        console.log(`Task ${task.id} uuendatud: ${checkbox.checked}`);
+    } catch (err) {
+        console.error('Taski uuendamisel viga:', err);
+    }
+});
 
-            console.log(`Task ${task.id} uuendatud: ${checkbox.checked}`);
-        } catch (err) {
-            console.error('Taski uuendamisel viga:', err);
-        }
-    });
+const deleteButton = taskRow.querySelector('.delete-task');
+deleteButton.addEventListener('click', async () => {
+    try {
+        const response = await fetch(`/tasks/${task.id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+        });
 
-    const deleteButton = taskRow.querySelector('.delete-task');
-    deleteButton.addEventListener('click', async () => {
-        try {
-            const response = await fetch(`/tasks/${task.id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
-            });
+        if (!response.ok) throw new Error('Serveri viga: ' + response.status);
 
-            if (!response.ok) throw new Error('Serveri viga: ' + response.status);
+        taskList.removeChild(taskRow);
+        tasks.splice(tasks.indexOf(task), 1);
+    } catch (err) {
+        console.error('Taski kustutamisel viga:', err);
+    }
+});
 
-            taskList.removeChild(taskRow);
-            tasks.splice(tasks.indexOf(task), 1);
-        } catch (err) {
-            console.error('Taski kustutamisel viga:', err);
-        }
-    });
+// Eridisainiga checkbox
+hydrateAntCheckboxes(taskRow);
 
-    // Eridisainiga checkbox
-    hydrateAntCheckboxes(taskRow);
-
-    return taskRow;
+return taskRow;
 }
 
 // Checkboxide eridisaini funktsioon
@@ -171,3 +136,83 @@ function hydrateAntCheckboxes(element) {
         });
     });
 }
+
+// Kui leht on laetud
+window.addEventListener('load', () => {
+    // DOM elemendid
+    taskList = document.querySelector('#task-list');
+    addTask = document.querySelector('#add-task');
+    taskInput = document.querySelector('#new-task-name');
+
+    const loginButton = document.querySelector('#login-button');
+    const logoutButton = document.querySelector('#logout-button');
+
+    // LOGIN
+    loginButton.addEventListener('click', async () => {
+        const username = document.querySelector('#login-username').value;
+        const password = document.querySelector('#login-password').value;
+
+        try {
+            const response = await fetch('/users/get-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            if (!response.ok) throw new Error('Vale kasutajanimi või parool');
+
+            const data = await response.json();
+            ACCESS_TOKEN = data.access_token;
+            sessionStorage.setItem('token', ACCESS_TOKEN);
+
+            document.querySelector('#login-container').style.display = 'none';
+            document.querySelector('#todo-container').style.display = 'block';
+
+            loadTasksFromServer();
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    // LOGOUT
+    logoutButton.addEventListener('click', () => {
+        sessionStorage.removeItem('token');
+        ACCESS_TOKEN = null;
+        document.querySelector('#login-container').style.display = 'block';
+        document.querySelector('#todo-container').style.display = 'none';
+    });
+
+    // Kui token juba olemas
+    const token = sessionStorage.getItem('token');
+    if (token) {
+        ACCESS_TOKEN = token;
+        document.querySelector('#login-container').style.display = 'none';
+        document.querySelector('#todo-container').style.display = 'block';
+        loadTasksFromServer();
+    }
+
+    // Lisame uue taski
+    addTask.addEventListener('click', async () => {
+        const title = taskInput.value.trim();
+        if (!title) return;
+
+        try {
+            const response = await fetch('/tasks', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title: title, desc: "" })
+            });
+
+            if (!response.ok) throw new Error('Serveri viga: ' + response.status);
+
+            const newTask = await response.json();
+            tasks.push(newTask);
+            renderTask(newTask);
+            taskInput.value = '';
+        } catch (err) {
+            console.error('Taski lisamisel viga:', err);
+        }
+    });
+});
