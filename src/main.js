@@ -6,7 +6,7 @@ let taskList;
 let addTask;
 let taskInput;
 
-// Sinu access token
+// Access token
 const ACCESS_TOKEN = "E5Q7-iN8HLCY-v8IUiEjkv7GK7EJkm1A";
 
 // Laeme serverist olemasolevad taskid
@@ -81,6 +81,32 @@ function createTaskRow(task) {
 
     const name = taskRow.querySelector("[name='name']");
     name.value = task.title;
+
+// Kui kasutaja muudab ülesande teksti
+name.addEventListener('change', async () => {
+    const newTitle = name.value.trim();
+    if (!newTitle || newTitle === task.title) return; // Kui ei muudetud midagi, ära tee päringut
+
+    try {
+        const response = await fetch(`/tasks/${task.id}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ title: newTitle })
+        });
+
+        if (!response.ok) throw new Error('Serveri viga: ' + response.status);
+
+        // Uuendame kohalikus massiivis
+        task.title = newTitle;
+        console.log(`Task "${task.id}" uuendatud`);
+    } catch (err) {
+        console.error('Taski muutmisel viga:', err);
+    }
+});
+
 
     const checkbox = taskRow.querySelector("[name='completed']");
     checkbox.checked = task.marked_as_done;
